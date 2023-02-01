@@ -1,33 +1,36 @@
-#!/bin/sh
+#!/bin/bash
 
-mysql_install_db
+/usr/bin/mysqld_safe > /dev/null 2>&1 &
 
-/etc/init.d/mysql start
+RET=1
+while [[ RET -ne 0 ]]; do
+    echo "=> Waiting for confirmation of Mariadb service startup..."
+    sleep 2
+    mysql -uroot -e "status" > /dev/null 2>&1
+    RET=$?
+done
 
-if [ -d "/var/lib/mysql/$SQL_DATABASE" ]
-then
-	echo "Database already exists"
-else
+echo "=> Creating Mariadb database named ${SQL_DATABASE}"
 
-	mysql_secure_installation << _EOF_
+mysql -uroot -e "CREATE DATABASE ${SQL_DATABASE};"
+mysql -uroot -e "CREATE USER '${SQL_ADMIN}'@'%' IDENTIFIED BY '${SQL_ROOT_PASSWORD}';"
+mysql -uroot -e "GRANT ALL PRIVILEGES ON *.* TO '${SQL_ADMIN}'@'%' WITH GRANT OPTION"
+mysql -uroot -e "FLUSH PRIVILEGES;"
+mysql -uroot -e "CREATE USER '${SQL_USER}'@'%' IDENTIFIED BY '${SQL_PASSWORD}'"
+mysql -uroot -e "GRANT ALL PRIVILEGES ON ${SQL_DATABASE}.* TO '${SQL_USER}'@'%' WITH GRANT OPTION"
+mysql -uroot -e "FLUSH PRIVILEGES;"
 
-Y
-$SQL_ROOT_PASSWORD
-$SQL_ROOT_PASSWORD
-Y
-n
-Y
-Y
-_EOF_
+echo "=> Done!"
 
-echo "GRANT ALL ON *.* TO 'root'@'%' IDENTIFIED BY '$SQL_ROOT_PASSWORD'; FLUSH PRIVILEGES;" | mysql -uroot
+echo "========================================================================"
+echo "You can now connect to this Mariadb Server using:"
+echo ""
+echo "    mariadb -u'user' -p'password' -h<host> -P<port>"
+echo ""
+echo "========================================================================"
 
-echo "CREATE DATABASE IF NOT EXISTS $SQL_DATABASE; GRANT ALL ON $SQL_DATABASE.* TO '$SQL_USER'@'%' IDENTIFIED BY '$SQL_PASSWORD'; FLUSH PRIVILEGES;" | mysql -u root
+mysqladmin -uroot shutdown
 
-mysql -uroot -p$SQL_ROOT_PASSWORD $SQL_DATABASE < /usr/local/bin/wordpress.sql
-
-fi
-
-/etc/init.d/mysql stop
+touch ${DB_PATH}/.initialized_db
 
 exec "$@"
