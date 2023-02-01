@@ -11,11 +11,12 @@ RUN openssl req -x509 -nodes \
 	-subj "/C=FR/ST=IDF/L=Paris/O=42/OU=42/CN=malouvar.42.fr/UID=malouvar"
 
 RUN mkdir -p /var/run/nginx
+RUN chown -R www-data:www-data /var/www/html
+RUN chmod -R 755 /var/www/html
 
 COPY ./conf/nginx.conf /etc/nginx/nginx.conf
 
-RUN chown -R www-data:www-data /var/www/html
-RUN chmod -R 755 /var/www/html
+
 
 EXPOSE 443
 

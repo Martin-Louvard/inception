@@ -4,6 +4,7 @@ RUN apt-get update -y \
 	&& apt-get upgrade -y \
 	&& apt-get -y install wget \
 	php7.3 \
+	php-cgi \
 	php-fpm \
 	php-mysql
 
